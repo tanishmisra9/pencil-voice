@@ -1,0 +1,50 @@
+// Every knob of the sound, with units. `graphite` is the default: a soft pencil on drawing paper.
+/**
+ * A soft graphite pencil on drawing paper. The 20 one-third-octave band gains (125 Hz–10 kHz) and `outGain` were fitted
+ * to a recording of a real pencil with `tools/fit.mjs`: every band within ±1.5 dB of the recording (3.15 kHz wanders to
+ * about ±1.8 dB run to run, because the random paper-tooth clicks live there), level ratio 1.004. No audio is shipped,
+ * only these measurements. The near-zero 3150/4000 Hz gains are right: the paper tooth fills them.
+ */
+export const graphite = {
+    bands: [
+        { f: 125, q: 4.3, g: 0.2642 },
+        { f: 160, q: 4.3, g: 0.2508 },
+        { f: 200, q: 4.3, g: 0.259 },
+        { f: 250, q: 4.3, g: 0.3536 },
+        { f: 315, q: 4.3, g: 0.3415 },
+        { f: 400, q: 4.3, g: 0.8402 },
+        { f: 500, q: 4.3, g: 2.9578 },
+        { f: 630, q: 4.3, g: 1.7818 },
+        { f: 800, q: 4.3, g: 1.2744 },
+        { f: 1000, q: 4.3, g: 0.7346 },
+        { f: 1250, q: 4.3, g: 0.4433 },
+        { f: 1600, q: 4.3, g: 0.7825 },
+        { f: 2000, q: 4.3, g: 0.1139 },
+        { f: 2500, q: 4.3, g: 0.3271 },
+        { f: 3150, q: 4.3, g: 0.0027 },
+        { f: 4000, q: 4.3, g: 0.0113 },
+        { f: 5000, q: 4.3, g: 0.1507 },
+        { f: 6300, q: 4.3, g: 0.3565 },
+        { f: 8000, q: 4.3, g: 0.4593 },
+        { f: 10000, q: 4.3, g: 0.8227 },
+    ],
+    hp: 100,
+    outGain: 0.3655,
+    floor: 0.085,
+    max: 0.23,
+    fullSpeed: 900,
+    downWeight: 0.15,
+    curvatureSoft: 0.35,
+    curvatureScale: 30,
+    brightness: 0.35,
+    toothPerPx: 0.6,
+    tooth: 0.5,
+    toothFreq: 3400,
+    toothDecay: 0.0025,
+    pan: 0.6,
+    attack: 0.012,
+    release: 0.04,
+    releaseAfterMs: 80,
+    tick: 0.5,
+    touch: 0.35,
+};

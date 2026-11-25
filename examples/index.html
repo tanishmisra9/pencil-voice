@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>pencil-voice: a pencil sound that follows the stroke</title>
+  <meta name="description" content="A synthesized pencil-on-paper sound that follows any SVG stroke as it is drawn." />
+  <style>
+    :root {
+      --paper: #f6f3ec;
+      --ink: #2b2a28;
+      --dim: #6d6a63;
+      --rule: #d9d3c6;
+      color-scheme: light;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--paper);
+      color: var(--ink);
+      font: 17px/1.55 ui-serif, Georgia, "Times New Roman", serif;
+    }
+    main { max-width: 760px; margin: 0 auto; padding: 56px 24px 120px; }
+    h1 { font-size: clamp(2rem, 6vw, 3.2rem); line-height: 1.1; margin: 0 0 12px; letter-spacing: -0.01em; }
+    h2 { font-size: 1.35rem; margin: 0 0 4px; }
+    p { margin: 0 0 14px; }
+    .dim { color: var(--dim); }
+    code { font: 0.9em ui-monospace, SFMono-Regular, Menlo, monospace; background: #ebe6db; padding: 1px 5px; }
+    a { color: inherit; }
+
+    #sound {
+      position: sticky; top: 12px; z-index: 5;
+      display: flex; align-items: center; gap: 10px;
+      margin: 24px 0 40px; padding: 10px 14px;
+      background: #fffdf8; border: 1px solid var(--rule);
+      font: 14px/1.3 ui-sans-serif, system-ui, sans-serif;
+    }
+    #sound button { font: inherit; padding: 6px 12px; border: 1px solid var(--ink); background: var(--ink); color: var(--paper); cursor: pointer; }
+    #sound .state::before { content: ""; display: inline-block; width: 8px; height: 8px; margin-right: 6px; background: #b9b3a6; }
+    #sound[data-on] .state::before { background: #3a7d44; }
+
+    section { margin: 72px 0; }
+    svg.draw { width: 100%; height: auto; overflow: visible; }
+    svg.draw path { fill: none; stroke: var(--ink); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+
+    /* 1. Scroll: a tall track with the drawing pinned while you scroll through it. */
+    .track { height: 220vh; position: relative; }
+    .pin { position: sticky; top: 80px; }
+
+    .row { display: flex; gap: 12px; align-items: center; margin-top: 12px; font: 14px ui-sans-serif, system-ui, sans-serif; }
+    input[type="range"] { flex: 1; accent-color: var(--ink); }
+    .btn { font: 14px ui-sans-serif, system-ui, sans-serif; padding: 6px 12px; border: 1px solid var(--ink); background: transparent; cursor: pointer; }
+
+    #knobs { display: grid; grid-template-columns: 9rem 1fr 4rem; gap: 8px 12px; align-items: center; font: 14px ui-sans-serif, system-ui, sans-serif; }
+    #knobs output { color: var(--dim); text-align: right; font-variant-numeric: tabular-nums; }
+    footer { margin-top: 96px; padding-top: 16px; border-top: 1px solid var(--rule); font-size: 14px; }
+  </style>
+</head>
+<body>
+<main>
+  <h1>pencil-voice</h1>
+  <p>A pencil sound that follows the stroke: it is synthesized live from the pen tip's speed, direction, curvature and
+    position, so a fast flick sounds different from a slow loop, a downstroke from an upstroke, and a sharp turn
+    clicks. There are no audio files.</p>
+  <p class="dim">Browsers only allow sound after you interact with the page, and scrolling doesn't count, so tap or
+    click anywhere first. Headphones help: the sound pans with the tip.</p>
+
+  <div id="sound"><span class="state">Sound is off until you tap or click</span><button type="button" id="enable">Turn sound on</button></div>
+
+  <section>
+    <h2>1. Drawn by scroll</h2>
+    <p class="dim">Scroll through this section. Scroll back up and nothing plays: only new ink makes sound.</p>
+    <div class="track" id="track">
+      <div class="pin">
+        <svg class="draw" viewBox="0 0 520 500" aria-label="A looping arrow drawn as you scroll">
+          <path id="loop" d="M 60 40 C 260 20, 420 60, 380 160 C 340 260, 180 220, 220 150 C 260 80, 420 120, 460 240 C 500 360, 360 420, 300 470 M 300 470 L 268 432 M 300 470 L 347 455" />
+        </svg>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>2. Drawn by dragging</h2>
+    <p class="dim">Drag the slider fast and slow. The spiral tightens toward the middle, so the pencil gets lighter.</p>
+    <svg class="draw" viewBox="0 0 520 320" aria-label="A spiral drawn by the slider">
+      <path id="spiral" />
+    </svg>
+    <div class="row"><input id="drag" type="range" min="0" max="1" step="0.001" value="0" aria-label="How much of the spiral is drawn" /></div>
+  </section>
+
+  <section>
+    <h2>3. Drawn over time</h2>
+    <p class="dim">A scribble written in two seconds, eased like a hand: slow to start, quick through the middle.</p>
+    <svg class="draw" viewBox="0 0 520 200" aria-label="A handwritten scribble">
+      <path id="scribble" d="M 20 130 C 60 20, 100 20, 90 100 C 80 170, 140 170, 150 110 C 160 50, 190 40, 200 100 C 210 160, 240 160, 250 90 C 255 40, 280 20, 290 60 C 300 110, 280 160, 300 160 C 330 160, 340 60, 360 60 C 390 60, 370 150, 400 150 C 430 150, 450 80, 500 100" />
+    </svg>
+    <div class="row"><button class="btn" id="write" type="button">Write it</button></div>
+  </section>
+
+  <section>
+    <h2>Knobs</h2>
+    <p class="dim">A few of the <a href="https://github.com/tanishmisra9/pencil-voice/blob/main/docs/tuning.md">tuning knobs</a>, live.</p>
+    <div id="knobs"></div>
+  </section>
+
+  <footer class="dim">
+    <a href="https://github.com/tanishmisra9/pencil-voice">github.com/tanishmisra9/pencil-voice</a> · MIT
+  </footer>
+</main>
+
+<script type="module">
+  import { createPencilVoice, followStroke } from "../dist/index.js";
+
+  const voice = createPencilVoice();
+  window.voice = voice; // for poking at it in the console
+
+  // Sound status: the voice unlocks itself on the first gesture; this just reports it.
+  const box = document.getElementById("sound");
+  const showState = () => {
+    const on = voice.context?.state === "running";
+    box.toggleAttribute("data-on", on);
+    box.querySelector(".state").textContent = !voice.context
+      ? "Sound isn't available in this browser"
+      : on ? "Sound is on" : "Sound is off until you tap or click";
+    document.getElementById("enable").hidden = on || !voice.context;
+  };
+  voice.context?.addEventListener("statechange", showState);
+  showState();
+
+  // Draws a path to `p` (0…1) with a dash, and voices it.
+  function drawable(path) {
+    path.setAttribute("pathLength", "1");
+    path.style.strokeDasharray = "1 1";
+    path.style.strokeDashoffset = "1";
+    const follow = followStroke(voice, path.getAttribute("d"), { element: path });
+    return (p) => {
+      path.style.strokeDashoffset = String(1 - p);
+      follow.update(p);
+    };
+  }
+
+  // 1. Scroll: progress through the track. Only ever grows, so scrolling back up leaves the ink and stays quiet.
+  const track = document.getElementById("track");
+  const drawLoop = drawable(document.getElementById("loop"));
+  let most = 0;
+  const onScroll = () => {
+    const r = track.getBoundingClientRect();
+    const p = Math.min(1, Math.max(0, -r.top / (r.height - innerHeight)));
+    most = Math.max(most, p);
+    drawLoop(most);
+  };
+  addEventListener("scroll", onScroll, { passive: true });
+  onScroll();
+
+  // 2. Drag: an Archimedean spiral, drawn by the slider (dragging back un-draws; only forward makes sound).
+  const spiral = document.getElementById("spiral");
+  const turns = 4.5, steps = 900, cx = 260, cy = 160;
+  let d = "";
+  for (let k = 0; k <= steps; k++) {
+    const t = k / steps, a = t * turns * 2 * Math.PI, r = 140 * (1 - t) + 6;
+    d += `${k ? "L" : "M"} ${(cx + r * Math.cos(a) * 1.6).toFixed(2)} ${(cy + r * Math.sin(a)).toFixed(2)} `;
+  }
+  spiral.setAttribute("d", d);
+  const drawSpiral = drawable(spiral);
+  const slider = document.getElementById("drag");
+  slider.addEventListener("input", () => drawSpiral(+slider.value));
+  drawSpiral(0);
+
+  // 3. Time: the caller owns the clock (here, requestAnimationFrame) and pushes progress.
+  const scribble = document.getElementById("scribble");
+  let drawScribble = drawable(scribble);
+  drawScribble(0);
+  const ease = (t) => (t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2);
+  document.getElementById("write").addEventListener("click", () => {
+    drawScribble = drawable(scribble); // a fresh follower: the replay starts silent at 0
+    drawScribble(0);
+    const t0 = performance.now(), dur = 2000;
+    const frame = (now) => {
+      const t = Math.min(1, (now - t0) / dur);
+      drawScribble(ease(t));
+      if (t < 1) requestAnimationFrame(frame);
+    };
+    requestAnimationFrame(frame);
+  });
+
+  // Knobs: each slider calls voice.configure live.
+  const knobs = [
+    ["max", "Loudness", 0.05, 0.6, 0.005],
+    ["brightness", "Brightness swing", 0, 1, 0.01],
+    ["tooth", "Paper tooth", 0, 1.5, 0.01],
+    ["toothPerPx", "Tooth per px", 0, 2, 0.01],
+    ["pan", "Stereo width", 0, 1, 0.01],
+    ["releaseAfterMs", "Release after (ms)", 20, 400, 5],
+  ];
+  const host = document.getElementById("knobs");
+  for (const [key, label, min, max, step] of knobs) {
+    const id = `k-${key}`;
+    host.insertAdjacentHTML("beforeend",
+      `<label for="${id}">${label}</label><input id="${id}" type="range" min="${min}" max="${max}" step="${step}" value="${voice.config[key]}"><output for="${id}">${voice.config[key]}</output>`);
+    const input = document.getElementById(id), out = input.nextElementSibling;
+    input.addEventListener("input", () => {
+      voice.configure({ [key]: +input.value });
+      out.textContent = input.value;
+    });
+  }
+</script>
+</body>
+</html>
