@@ -1,6 +1,6 @@
 {
   "name": "pencil-voice",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "A synthesized pencil-on-paper sound that follows any SVG stroke as it is drawn: speed, direction, curvature, sharp turns and position on screen.",
   "license": "MIT",
   "author": "Tanish Misra",

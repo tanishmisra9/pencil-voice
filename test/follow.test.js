@@ -89,6 +89,19 @@ test("a jump over a turn in one update still ticks; reset makes the next update 
   assert.equal(calls.length, n, "silent after reset");
 });
 
+test("a lazy forwarder works when the voice is created after the follower", () => {
+  const ref = { current: null };
+  const lazy = { move: (m) => ref.current?.move(m), tick: () => ref.current?.tick(), touch: () => ref.current?.touch() };
+  const c = clock();
+  const f = followStroke(lazy, "M 0 0 L 100 0", { now: c.now });
+  f.update(0);
+  const { calls, voice } = fakeVoice();
+  ref.current = voice; // e.g. a React parent's effect, which runs after the child's
+  c.step(16);
+  f.update(0.5);
+  assert.equal(calls.filter((x) => x[0] === "move").length, 1);
+});
+
 test("no voice (e.g. reduced motion) is fine", () => {
   const f = followStroke(null, "M 0 0 L 100 0");
   f.update(0);

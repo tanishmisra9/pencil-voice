@@ -37,7 +37,7 @@ pencil-voice models the tip instead, so the sound comes from the stroke you actu
 From GitHub, pinned to a release:
 
 ```sh
-npm install github:tanishmisra9/pencil-voice#v0.1.0
+npm install github:tanishmisra9/pencil-voice#v0.1.1
 ```
 
 The package ships built (`dist/`), so the install runs no build step. ESM only, with TypeScript types.
@@ -103,7 +103,7 @@ addEventListener("scroll", () => {
 ```tsx
 import { useEffect, useRef } from "react";
 import { motion, useScroll, useTransform, type MotionValue } from "framer-motion";
-import { createPencilVoice, followStroke, type PencilVoice } from "pencil-voice";
+import { createPencilVoice, followStroke, type PencilMove, type PencilVoice } from "pencil-voice";
 
 // One voice for the page. Skip it for reduced motion.
 function usePencilVoice() {
@@ -119,7 +119,10 @@ function usePencilVoice() {
 function Stroke({ d, draw, voice }: { d: string; draw: MotionValue<number>; voice: React.RefObject<PencilVoice | null> }) {
   const ref = useRef<SVGPathElement>(null);
   useEffect(() => {
-    const pen = followStroke(voice.current, d, { element: ref.current });
+    // A child's effect runs before its parent's, so the voice may not exist yet: forward to it lazily.
+    // (Passing voice.current here would capture null and stay silent.)
+    const lazy = { move: (m: PencilMove) => voice.current?.move(m), tick: () => voice.current?.tick(), touch: () => voice.current?.touch() };
+    const pen = followStroke(lazy, d, { element: ref.current });
     pen.update(draw.get());
     const off = draw.on("change", pen.update);
     return () => { off(); pen.dispose(); };
@@ -184,8 +187,11 @@ with the same shape, so your code doesn't need to branch.
 | `touchAt` | 4 | px into each subpath where the pen "lands". |
 | `now` | `performance.now` | The clock (handy in tests). |
 
-The returned follower has `update(progress)`, `reset()`, `dispose()` and `stroke` (the model). `voice` may be `null`;
-the follower then does nothing, which is handy for reduced motion.
+The returned follower has `update(progress)`, `reset()`, `dispose()` and `stroke` (the model).
+
+`voice` can be anything with `move`, `tick` and `touch` (a `VoiceLike`). That lets you pass a forwarder that looks the
+voice up when it's called, which you need when the voice is created after the follower (see the React recipe). It may
+also be `null`: the follower then does nothing, which is handy for reduced motion.
 
 ### `createStroke(d, options?) → Stroke`
 

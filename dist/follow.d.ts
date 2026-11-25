@@ -1,5 +1,11 @@
 import { type Stroke, type StrokeOptions } from "./stroke.js";
 import type { PencilVoice } from "./voice.js";
+/**
+ * What a follower needs from a voice: just the three calls. A full `PencilVoice` works, and so does a forwarder that
+ * looks the voice up when it's called. You need the forwarder when the voice is created after the follower (e.g. a
+ * React parent's effect runs after its children's): `{ move: (m) => ref.current?.move(m), tick: …, touch: … }`.
+ */
+export type VoiceLike = Pick<PencilVoice, "move" | "tick" | "touch">;
 export type FollowOptions = StrokeOptions & {
     /**
      * The element the path is drawn in (the <path> itself, or its <svg>). Used only to place the tip on screen for pan:
@@ -22,4 +28,4 @@ export type StrokeFollower = {
     /** Stop listening for resize. */
     dispose(): void;
 };
-export declare function followStroke(voice: PencilVoice | null | undefined, d: string, options?: FollowOptions): StrokeFollower;
+export declare function followStroke(voice: VoiceLike | null | undefined, d: string, options?: FollowOptions): StrokeFollower;

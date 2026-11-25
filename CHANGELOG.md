@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.1
+
+- `followStroke` now takes any `VoiceLike` (an object with `move`, `tick` and `touch`), so you can pass a forwarder that
+  looks the voice up lazily. In React a child's effect runs before its parent's. If the voice is created in a parent's
+  effect, a follower created in the child's effect saw `null`, so the 0.1.0 React recipe was silent. The recipe now
+  uses a forwarder.
+
 ## 0.1.0
 
 First release.
