@@ -254,10 +254,13 @@ export function createStroke(d, options = {}) {
             }
         }
         starts.push(base);
-        pts.push(...p);
-        cum.push(...c);
-        angle.push(...a);
-        curv.push(...cv);
+        // A loop, not push(...p): spreading a long subpath (~100k+ points) overflows the argument limit.
+        for (let k = 0; k < n; k++) {
+            pts.push(p[k]);
+            cum.push(c[k]);
+            angle.push(a[k]);
+            curv.push(cv[k]);
+        }
     }
     const n = pts.length;
     const length = n ? cum[n - 1] : 0;

@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.2
+
+- `createStroke` no longer throws `RangeError: Maximum call stack size exceeded` on a very long single subpath (about
+  450,000 px or more, e.g. traced artwork).
+- The synth no longer allocates on the audio thread: filter coefficients are refilled in place each block instead of
+  about 24 new objects per block. Output is bit-identical and about 17% cheaper per block.
+- Demo: "Write it" reuses one follower with `reset()` instead of leaking a new one (and its resize listener) per click.
+
 ## 0.1.1
 
 - `followStroke` now takes any `VoiceLike` (an object with `move`, `tick` and `touch`), so you can pass a forwarder that

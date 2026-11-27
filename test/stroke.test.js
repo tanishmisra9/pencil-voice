@@ -96,3 +96,9 @@ test("bad paths throw a clear error; an empty path is an empty stroke", () => {
   assert.equal(createStroke("").length, 0);
   assert.deepEqual(createStroke("").tipAt(5), { x: 0, y: 0, angle: 0, down: 0, curvature: 0 });
 });
+
+test("a very long single subpath builds (no argument-spread limit)", () => {
+  const s = createStroke(`M 0 0 H 1000000`); // 500k resampled points in one subpath
+  near(s.length, 1e6, 1e-6, "length");
+  assert.equal(s.pts.length, s.cum.length);
+});

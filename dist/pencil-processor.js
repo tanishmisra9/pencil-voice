@@ -33,6 +33,10 @@ class PencilVoiceProcessor extends AudioWorkletProcessor {
     this.burstDecay = Math.exp(-1 / (0.008 * sampleRate));
     this.tooth = { s1: 0, s2: 0, env: 0 };
     this.burstSvf = { s1: 0, s2: 0 };
+    // Filter coefficients, refilled in place every block: no allocation on the audio thread (GC there clicks).
+    this.hpC = PencilVoiceProcessor.newCoef();
+    this.toothC = PencilVoiceProcessor.newCoef();
+    this.burstC = PencilVoiceProcessor.newCoef();
     this.burst = 0;
     this.seed = 0x2545f491;
     this.port.onmessage = (e) => {
@@ -61,6 +65,7 @@ class PencilVoiceProcessor extends AudioWorkletProcessor {
       s2: prev[i]?.s2 ?? 0,
       t: prev[i]?.t ?? { s1: 0, s2: 0 },
       seed: prev[i]?.seed ?? ((0x9e3779b9 * (i + 1)) >>> 0 || 1),
+      c: PencilVoiceProcessor.newCoef(),
     }));
   }
 
@@ -74,12 +79,19 @@ class PencilVoiceProcessor extends AudioWorkletProcessor {
     return st.seed / 2147483648 - 1;
   }
 
-  // Coefficients of a TPT state-variable filter (Simper); the band-pass output is normalised to unity peak.
-  static coef(f, q) {
+  static newCoef() {
+    return { a1: 0, a2: 0, a3: 0, k: 0 };
+  }
+
+  // Coefficients of a TPT state-variable filter (Simper), written into `c`; the band-pass output is normalised to
+  // unity peak.
+  static coef(f, q, c) {
     const g = Math.tan((Math.PI * Math.min(f, sampleRate * 0.45)) / sampleRate);
-    const k = 1 / q;
-    const a1 = 1 / (1 + g * (g + k));
-    return { a1, a2: g * a1, a3: g * g * a1, k };
+    c.k = 1 / q;
+    c.a1 = 1 / (1 + g * (g + c.k));
+    c.a2 = g * c.a1;
+    c.a3 = g * g * c.a1;
+    return c;
   }
 
   static bp(st, c, x) {
@@ -112,16 +124,16 @@ class PencilVoiceProcessor extends AudioWorkletProcessor {
     const shift = Math.pow(2, params.brightness[0]);
     const pClick = params.toothRate[0] / sampleRate;
     const C = PencilVoiceProcessor;
-    const coefs = this.bands.map((b) => C.coef(b.f * shift, b.q));
-    const hpC = this.hp > 0 ? C.coef(this.hp * shift, Math.SQRT1_2) : null;
-    const toothC = C.coef(this.toothFreq * shift, 1.6);
-    const burstC = C.coef(2200 * shift, 0.9);
+    for (let b = 0; b < this.bands.length; b++) C.coef(this.bands[b].f * shift, this.bands[b].q, this.bands[b].c);
+    const hpC = this.hp > 0 ? C.coef(this.hp * shift, Math.SQRT1_2, this.hpC) : null;
+    const toothC = C.coef(this.toothFreq * shift, 1.6, this.toothC);
+    const burstC = C.coef(2200 * shift, 0.9, this.burstC);
     for (let i = 0; i < out.length; i++) {
       const w = this.noise();
       let bed = 0;
       for (let b = 0; b < this.bands.length; b++) {
         const band = this.bands[b];
-        bed += band.g * C.bp(band.t, coefs[b], C.bp(band, coefs[b], this.noise(band)));
+        bed += band.g * C.bp(band.t, band.c, C.bp(band, band.c, this.noise(band)));
       }
       if (hpC) bed = C.hpf(this.hpB, hpC, C.hpf(this.hpA, hpC, bed));
       if (pClick > 0 && Math.random() < pClick) this.tooth.env = Math.max(this.tooth.env, 0.6 + 0.4 * Math.random());

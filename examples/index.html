@@ -133,10 +133,12 @@
     path.style.strokeDasharray = "1 1";
     path.style.strokeDashoffset = "1";
     const follow = followStroke(voice, path.getAttribute("d"), { element: path });
-    return (p) => {
+    const draw = (p) => {
       path.style.strokeDashoffset = String(1 - p);
       follow.update(p);
     };
+    draw.reset = follow.reset;
+    return draw;
   }
 
   // 1. Scroll: progress through the track. Only ever grows, so scrolling back up leaves the ink and stays quiet.
@@ -168,11 +170,11 @@
 
   // 3. Time: the caller owns the clock (here, requestAnimationFrame) and pushes progress.
   const scribble = document.getElementById("scribble");
-  let drawScribble = drawable(scribble);
+  const drawScribble = drawable(scribble);
   drawScribble(0);
   const ease = (t) => (t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2);
   document.getElementById("write").addEventListener("click", () => {
-    drawScribble = drawable(scribble); // a fresh follower: the replay starts silent at 0
+    drawScribble.reset(); // the replay starts silent at 0 (one follower: a new one per click would leak its resize listener)
     drawScribble(0);
     const t0 = performance.now(), dur = 2000;
     const frame = (now) => {

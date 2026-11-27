@@ -1,0 +1,17 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "cream-palette",
+        "value": "*",
+        "files": [
+          "examples/index.html"
+        ],
+        "createdAt": "2026-11-27T23:08:37.290Z",
+        "reason": "agent judgment: the demo's --paper #f6f3ec background is domain-appropriate (a pencil-on-paper sound demo drawn on a paper-coloured page), predates this session, and the perf task didn't touch styling"
+      }
+    ]
+  }
+}
